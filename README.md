@@ -1,3 +1,5 @@
+[![ReadMeSupportPalestine](https://raw.githubusercontent.com/Safouene1/support-palestine-banner/master/banner-project.svg)](https://s.id/standwithpalestine)
+
 # PHPNuxBill - PHP Mikrotik Billing
 
 ![PHPNuxBill](install/img/logo.png)
@@ -5,6 +7,7 @@
 ## Feature
 
 - Voucher Generator and Print
+- [Freeradius](https://github.com/hotspotbilling/phpnuxbill/wiki/FreeRadius)
 - Self registration
 - User Balance
 - Auto Renewal Package using Balance
@@ -12,7 +15,7 @@
 - Hotspot & PPPOE
 - Easy Installation
 - Multi Language
-- Payment Gateway Midtrans, Xendit and Tripay
+- Payment Gateway
 - SMS validation for login
 - Whatsapp Notification to Consumer
 - Telegram Notification for Admin
@@ -33,7 +36,7 @@ Most current web servers with PHP & MySQL installed will be capable of running P
 Minimum Requirements
 
 - Linux or Windows OS
-- PHP Version 7.4
+- Minimum PHP Version 7.4
 - Both PDO & MySQLi Support
 - PHP-GD2 Image Library
 - PHP-CURL
@@ -48,17 +51,14 @@ The problem with windows is hard to set cronjob, better Linux
 ## Changelog
 
 [CHANGELOG.md](CHANGELOG.md)
+
 ## Installation
 
 [Installation instructions](https://github.com/hotspotbilling/phpnuxbill/wiki)
 
-## Docker Version
+## Freeradius
 
-[Docker Repository](https://github.com/animegasan/phpnuxbill)
-
-## RADIUS system
-
-Still on development
+Support [Freeradius with Database](https://github.com/hotspotbilling/phpnuxbill/wiki/FreeRadius)
 
 ## Community Support
 
@@ -67,21 +67,24 @@ Still on development
 
 ## Technical Support
 
-Start from Rp 500.000 or $50
+This Software is Free and Open Source, Without any Warranty.
 
-If you chat me for any technical support, you need to pay, except for Donors, ask anything for free in the [discussion](/hotspotbilling/phpnuxbill/discussions) page
+Even if the software is free, but Technical Support is not,
+Technical Support Start from Rp 500.000 or $50
 
-[Telegram](https://t.me/ibnux)
+If you chat me for any technical support,
+you need to pay,
 
-[Website](https://ibnux.net/layanan)
+ask anything for free in the [discussion](/hotspotbilling/phpnuxbill/discussions) page or [Telegram Group](https://t.me/phpnuxbill)
+
+Contact me at [Telegram](https://t.me/ibnux)
 
 ## License
 
 GNU General Public License version 2 or later
 
-see LICENSE file
+see [LICENSE](LICENSE) file
 
-## [CHANGELOG](CHANGELOG.md)
 
 ## Donate to ibnux
 
@@ -95,5 +98,13 @@ a.n Ibnu Maksum
 
 ## SPONSORS
 
+- [mixradius.com](https://mixradius.com/) Paid Services Billing Radius
 - [mlink.id](https://mlink.id)
 - [https://github.com/sonyinside](https://github.com/sonyinside)
+
+## Thanks
+We appreciate all people who are participating in this project.
+
+<a href="https://github.com/hotspotbilling/phpnuxbill/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=hotspotbilling/phpnuxbill" />
+</a>

@@ -8,10 +8,23 @@
 session_start();
 include "config.php";
 
-if(empty($update_url)){
+if($db_password != null && ($db_pass == null || empty($db_pass))){
+    // compability for old version
+    $db_pass = $db_password;
+}
+
+if (empty($update_url)) {
     $update_url = 'https://github.com/hotspotbilling/phpnuxbill/archive/refs/heads/master.zip';
 }
 
+if(isset($_REQUEST['update_url']) && !empty($_REQUEST['update_url'])){
+    $update_url = $_REQUEST['update_url'];
+    $_SESSION['update_url'] = $update_url;
+}
+
+if(isset($_SESSION['update_url']) && !empty($_SESSION['update_url']) && $_SESSION['update_url'] != $update_url){
+    $update_url = $_SESSION['update_url'];
+}
 
 if (!isset($_SESSION['aid']) || empty($_SESSION['aid'])) {
     r2("./?_route=login&You_are_not_admin", 'e', 'You are not admin');
@@ -36,7 +49,7 @@ if (!extension_loaded('zip')) {
 
 
 $file = pathFixer('system/cache/phpnuxbill.zip');
-$folder = pathFixer('system/cache/phpnuxbill-'.basename($update_url, ".zip").'/');
+$folder = pathFixer('system/cache/phpnuxbill-' . basename($update_url, ".zip") . '/');
 
 if (empty($step)) {
     $step++;
@@ -77,6 +90,9 @@ if (empty($step)) {
     // remove downloaded zip
     if (file_exists($file)) unlink($file);
 } else if ($step == 3) {
+    deleteFolder('system/autoload/');
+    deleteFolder('system/vendor/');
+    deleteFolder('ui/ui/');
     copyFolder($folder, pathFixer('./'));
     deleteFolder('install/');
     deleteFolder($folder);
@@ -89,11 +105,10 @@ if (empty($step)) {
     }
 } else if ($step == 4) {
     if (file_exists("system/updates.json")) {
-        require 'config.php';
         $db = new pdo(
             "mysql:host=$db_host;dbname=$db_name",
             $db_user,
-            $db_password,
+            $db_pass,
             array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION)
         );
 
@@ -105,9 +120,9 @@ if (empty($step)) {
         foreach ($updates as $version => $queries) {
             if (!in_array($version, $dones)) {
                 foreach ($queries as $q) {
-                    try{
-                    $db->exec($q);
-                    }catch(PDOException $e){
+                    try {
+                        $db->exec($q);
+                    } catch (PDOException $e) {
                         //ignore, it exists already
                     }
                 }
@@ -118,6 +133,13 @@ if (empty($step)) {
     }
     $step++;
 } else {
+    $path = 'ui/compiled/';
+    $files = scandir($path);
+    foreach ($files as $file) {
+        if (is_file($path . $file)) {
+            unlink($path . $file);
+        }
+    }
     $version = json_decode(file_get_contents('version.json'), true)['version'];
     $continue = false;
 }
@@ -131,12 +153,12 @@ function r2($to, $ntype = 'e', $msg = '')
 {
     if ($msg == '') {
         header("location: $to");
-        exit;
+        die();
     }
     $_SESSION['ntype'] = $ntype;
     $_SESSION['notify'] = $msg;
     header("location: $to");
-    exit;
+    die();
 }
 
 function copyFolder($from, $to, $exclude = [])
@@ -182,10 +204,9 @@ function deleteFolder($path)
 
     <link rel="stylesheet" href="ui/ui/fonts/ionicons/css/ionicons.min.css">
     <link rel="stylesheet" href="ui/ui/fonts/font-awesome/css/font-awesome.min.css">
-    <link rel="stylesheet" href="ui/ui/fonts/MaterialDesign/css/materialdesignicons.min.css">
 
-    <link rel="stylesheet" href="ui/ui/styles/adminlte.min.css">
-    <link rel="stylesheet" href="ui/ui/styles/skin-blue.min.css">
+    <link rel="stylesheet" href="ui/ui/styles/modern-AdminLTE.min.css">
+
     <?php if ($continue) { ?>
         <meta http-equiv="refresh" content="3; ./update.php?step=<?= $step ?>">
     <?php } ?>

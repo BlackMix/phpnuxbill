@@ -37,6 +37,22 @@ $(document).ready(function () {
 $("#Hotspot").prop("checked", true).change();
 
 
+function checkIP(f, id) {
+	if (f.value.length > 6) {
+		$.get('./?_route=autoload/pppoe_ip_used&ip=' + f.value + '&id=' + id, function(data) {
+			$("#warning_ip").html(data)
+		});
+	}
+}
+
+function checkUsername(f, id) {
+	if (f.value.length > 1) {
+		$.get('./?_route=autoload/pppoe_username_used&u=' + f.value + '&id=' + id, function(data) {
+			$("#warning_username").html(data)
+		});
+	}
+}
+
 //auto load pool - pppoe plan
 var htmlobjek;
 $(document).ready(function(){
@@ -48,7 +64,6 @@ $(document).ready(function(){
         cache: false,
         success: function(msg){
             $("#pool_name").html(msg);
-            $("#pool_expired").html(msg);
         }
     });
   });
@@ -81,7 +96,7 @@ $(function() {
 					});
 				};
 
-		}else{
+		} else if ($('#POE').is(':checked')) {
 				$.ajax({
 					type: "POST",
 					dataType: "html",
@@ -97,6 +112,27 @@ $(function() {
 						dataType: "html",
 						url: "index.php?_route=autoload/plan",
 						data: "jenis=PPPOE&server="+server,
+						success: function(msg){
+							$("#plan").html(msg);
+						}
+					});
+				});
+		} else {
+				$.ajax({
+					type: "POST",
+					dataType: "html",
+					url: "index.php?_route=autoload/server",
+					success: function(msg){
+						$("#server").html(msg);
+					}
+				});
+				$("#server").change(function(){
+					var server = $("#server").val();
+					$.ajax({
+						type: "POST",
+						dataType: "html",
+						url: "index.php?_route=autoload/plan",
+						data: "jenis=VPN&server="+server,
 						success: function(msg){
 							$("#plan").html(msg);
 						}

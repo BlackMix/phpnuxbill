@@ -1,26 +1,27 @@
 <?php
+
 /**
  *  PHP Mikrotik Billing (https://github.com/hotspotbilling/phpnuxbill/)
  *  by https://t.me/ibnux
  **/
 _admin();
-$ui->assign('_title', $_L['Plugin Manager']);
+$ui->assign('_title', Lang::T('Plugin Manager'));
 $ui->assign('_system_menu', 'settings');
 
 $action = $routes['1'];
-$admin = Admin::_info();
 $ui->assign('_admin', $admin);
 
 
-if ($admin['user_type'] != 'Admin') {
-    r2(U . "dashboard", 'e', $_L['Do_Not_Access']);
+if (!in_array($admin['user_type'], ['SuperAdmin', 'Admin'])) {
+    _alert(Lang::T('You do not have permission to access this page'), 'danger', "dashboard");
 }
 
 switch ($action) {
 
     case 'nas-add':
-        $ui->assign('_system_menu', 'network');
+        $ui->assign('_system_menu', 'radius');
         $ui->assign('_title', "Network Access Server");
+        $ui->assign('routers', ORM::for_table('tbl_routers')->find_many());
         $ui->display('radius-nas-add.tpl');
         break;
     case 'nas-add-post':
@@ -32,6 +33,7 @@ switch ($action) {
         $server = _post('server', null);
         $community = _post('community', null);
         $description = _post('description');
+        $routers = _post('routers');
         $msg = '';
 
         if (Validator::Length($shortname, 30, 2) == false) {
@@ -54,8 +56,8 @@ switch ($action) {
             $msg .= 'NAS IP Exists<br>';
         }
         if ($msg == '') {
-            $id = Radius::nasAdd($shortname, $nasname, $ports, $secret, $description, $type, $server, $community);
-            if ($id > 0) {
+            require_once $DEVICE_PATH . DIRECTORY_SEPARATOR . "Radius.php";
+            if ((new Radius())->nasAdd($shortname, $nasname, $ports, $secret, $routers, $description, $type, $server, $community) > 0) {
                 r2(U . 'radius/nas-list/', 's', "NAS Added");
             } else {
                 r2(U . 'radius/nas-add/', 'e', "NAS Added Failed");
@@ -65,7 +67,7 @@ switch ($action) {
         }
         break;
     case 'nas-edit':
-        $ui->assign('_system_menu', 'network');
+        $ui->assign('_system_menu', 'radius');
         $ui->assign('_title', "Network Access Server");
 
         $id  = $routes['2'];
@@ -74,10 +76,11 @@ switch ($action) {
             $d = ORM::for_table('nas', 'radius')->where_equal('shortname', _get('name'))->find_one();
         }
         if ($d) {
+            $ui->assign('routers', ORM::for_table('tbl_routers')->find_many());
             $ui->assign('d', $d);
             $ui->display('radius-nas-edit.tpl');
         } else {
-            r2(U . 'radius/list', 'e', $_L['Account_Not_Found']);
+            r2(U . 'radius/list', 'e', Lang::T('Account Not Found'));
         }
 
         break;
@@ -91,6 +94,7 @@ switch ($action) {
         $server = _post('server', null);
         $community = _post('community', null);
         $description = _post('description');
+        $routers = _post('routers');
         $msg = '';
 
         if (Validator::Length($shortname, 30, 2) == false) {
@@ -109,7 +113,8 @@ switch ($action) {
             $type = null;
         }
         if ($msg == '') {
-            if (Radius::nasUpdate($id, $shortname, $nasname, $ports, $secret, $description, $type, $server, $community)) {
+            require_once $DEVICE_PATH . DIRECTORY_SEPARATOR . "Radius.php";
+            if ((new Radius())->nasUpdate($id, $shortname, $nasname, $ports, $secret, $routers, $description, $type, $server, $community)) {
                 r2(U . 'radius/list/', 's', "NAS Saved");
             } else {
                 r2(U . 'radius/nas-add', 'e', 'NAS NOT Exists');
@@ -127,13 +132,18 @@ switch ($action) {
             r2(U . 'radius/nas-list', 'e', 'NAS Not found');
         }
     default:
-        $ui->assign('_system_menu', 'network');
+        $ui->assign('_system_menu', 'radius');
         $ui->assign('_title', "Network Access Server");
         $name = _post('name');
         if (empty($name)) {
-            $nas = Radius::nasList();
+            $query = ORM::for_table('nas', 'radius');
+            $nas = Paginator::findMany($query);
         } else {
-            $nas = Radius::nasList($name);
+            $query = ORM::for_table('nas', 'radius')
+                ->where_like('nasname', $search)
+                ->where_like('shortname', $search)
+                ->where_like('description', $search);
+            $nas = Paginator::findMany($query, ['name' => $name]);
         }
         $ui->assign('name', $name);
         $ui->assign('nas', $nas);

@@ -6,11 +6,10 @@
  **/
 
 _admin();
-$ui->assign('_title', $_L['Reports']);
+$ui->assign('_title', Lang::T('Reports'));
 $ui->assign('_sysfrm_menu', 'reports');
 
 $action = $routes['1'];
-$admin = Admin::_info();
 $ui->assign('_admin', $admin);
 
 $mdate = date('Y-m-d');
@@ -29,16 +28,56 @@ switch ($action) {
 
     case 'print-by-date':
         $mdate = date('Y-m-d');
-        $d = ORM::for_table('tbl_transactions');
-        $d->where('recharged_on', $mdate);
-        $d->order_by_desc('id');
-        $x =  $d->find_many();
+        $types = ORM::for_table('tbl_transactions')->getEnum('type');
+        $methods = array_column(ORM::for_table('tbl_transactions')->rawQuery("SELECT DISTINCT SUBSTRING_INDEX(`method`, ' - ', 1) as method FROM tbl_transactions;")->findArray(), 'method');
+        $routers = array_column(ORM::for_table('tbl_transactions')->select('routers')->distinct('routers')->find_array(), 'routers');
+        $plans = array_column(ORM::for_table('tbl_transactions')->select('plan_name')->distinct('plan_name')->find_array(), 'plan_name');
+        $reset_day = $config['reset_day'];
+        if (empty($reset_day)) {
+            $reset_day = 1;
+        }
+        //first day of month
+        if (date("d") >= $reset_day) {
+            $start_date = date('Y-m-' . $reset_day);
+        } else {
+            $start_date = date('Y-m-' . $reset_day, strtotime("-1 MONTH"));
+        }
+        $tps = ($_GET['tps']) ? $_GET['tps'] : $types;
+        $mts = ($_GET['mts']) ? $_GET['mts'] : $methods;
+        $rts = ($_GET['rts']) ? $_GET['rts'] : $routers;
+        $plns = ($_GET['plns']) ? $_GET['plns'] : $plans;
+        $sd = _req('sd', $start_date);
+        $ed = _req('ed', $mdate);
+        $ts = _req('ts', '00:00:00');
+        $te = _req('te', '23:59:59');
 
-        $dr = ORM::for_table('tbl_transactions');
-        $dr->where('recharged_on', $mdate);
-        $dr->order_by_desc('id');
-        $xy =  $dr->sum('price');
+        $query = ORM::for_table('tbl_transactions')
+            ->whereRaw("UNIX_TIMESTAMP(CONCAT(`recharged_on`,' ',`recharged_time`)) >= " . strtotime("$sd $ts"))
+            ->whereRaw("UNIX_TIMESTAMP(CONCAT(`recharged_on`,' ',`recharged_time`)) <= " . strtotime("$ed $te"))
+            ->order_by_desc('id');
+        if (count($tps) > 0) {
+            $query->where_in('type', $tps);
+        }
+        if (count($mts) > 0) {
+            if (count($mts) != count($methods)) {
+                foreach ($mts as $mt) {
+                    $query->where_like('method', "$mt - %");
+                }
+            }
+        }
+        if (count($rts) > 0) {
+            $query->where_in('routers', $rts);
+        }
+        if (count($plns) > 0) {
+            $query->where_in('plan_name', $plns);
+        }
+        $x =  $query->find_array();
+        $xy =  $query->sum('price');
 
+        $ui->assign('sd', $sd);
+        $ui->assign('ed', $ed);
+        $ui->assign('ts', $ts);
+        $ui->assign('te', $te);
         $ui->assign('d', $x);
         $ui->assign('dr', $xy);
         $ui->assign('mdate', $mdate);
@@ -49,24 +88,60 @@ switch ($action) {
 
     case 'pdf-by-date':
         $mdate = date('Y-m-d');
+        $types = ORM::for_table('tbl_transactions')->getEnum('type');
+        $methods = array_column(ORM::for_table('tbl_transactions')->rawQuery("SELECT DISTINCT SUBSTRING_INDEX(`method`, ' - ', 1) as method FROM tbl_transactions;")->findArray(), 'method');
+        $routers = array_column(ORM::for_table('tbl_transactions')->select('routers')->distinct('routers')->find_array(), 'routers');
+        $plans = array_column(ORM::for_table('tbl_transactions')->select('plan_name')->distinct('plan_name')->find_array(), 'plan_name');
+        $reset_day = $config['reset_day'];
+        if (empty($reset_day)) {
+            $reset_day = 1;
+        }
+        //first day of month
+        if (date("d") >= $reset_day) {
+            $start_date = date('Y-m-' . $reset_day);
+        } else {
+            $start_date = date('Y-m-' . $reset_day, strtotime("-1 MONTH"));
+        }
+        $tps = ($_GET['tps']) ? $_GET['tps'] : $types;
+        $mts = ($_GET['mts']) ? $_GET['mts'] : $methods;
+        $rts = ($_GET['rts']) ? $_GET['rts'] : $routers;
+        $plns = ($_GET['plns']) ? $_GET['plns'] : $plans;
+        $sd = _req('sd', $start_date);
+        $ed = _req('ed', $mdate);
+        $ts = _req('ts', '00:00:00');
+        $te = _req('te', '23:59:59');
 
-        $d = ORM::for_table('tbl_transactions');
-        $d->where('recharged_on', $mdate);
-        $d->order_by_desc('id');
-        $x =  $d->find_many();
-
-        $dr = ORM::for_table('tbl_transactions');
-        $dr->where('recharged_on', $mdate);
-        $dr->order_by_desc('id');
-        $xy =  $dr->sum('price');
+        $query = ORM::for_table('tbl_transactions')
+            ->whereRaw("UNIX_TIMESTAMP(CONCAT(`recharged_on`,' ',`recharged_time`)) >= " . strtotime("$sd $ts"))
+            ->whereRaw("UNIX_TIMESTAMP(CONCAT(`recharged_on`,' ',`recharged_time`)) <= " . strtotime("$ed $te"))
+            ->order_by_desc('id');
+        if (count($tps) > 0) {
+            $query->where_in('type', $tps);
+        }
+        if (count($mts) > 0) {
+            if (count($mts) != count($methods)) {
+                foreach ($mts as $mt) {
+                    $query->where_like('method', "$mt - %");
+                }
+            }
+        }
+        if (count($rts) > 0) {
+            $query->where_in('routers', $rts);
+        }
+        if (count($plns) > 0) {
+            $query->where_in('plan_name', $plns);
+        }
+        $x =  $query->find_array();
+        $xy =  $query->sum('price');
 
         $title = ' Reports [' . $mdate . ']';
         $title = str_replace('-', ' ', $title);
 
-        if(file_exists('system/uploads/logo.png')){
-            $logo = 'system/uploads/logo.png';
-        }else{
-            $logo = 'system/uploads/logo.default.png';
+        $UPLOAD_URL_PATH = str_replace($root_path, '',  $UPLOAD_PATH);
+        if (file_exists($UPLOAD_PATH . '/logo.png')) {
+            $logo = $UPLOAD_URL_PATH . '/logo.png';
+        } else {
+            $logo = $UPLOAD_URL_PATH . '/logo.default.png';
         }
 
         if ($x) {
@@ -75,21 +150,21 @@ switch ($action) {
 				<div id="address">
 					<h3>' . $config['CompanyName'] . '</h3>
 					' . $config['address'] . '<br>
-					' . $_L['Phone_Number'] . ': ' . $config['phone'] . '<br>
+					' . Lang::T('Phone Number') . ': ' . $config['phone'] . '<br>
 				</div>
-				<div id="logo"><img id="image" src="'.$logo.'" alt="logo" /></div>
+				<div id="logo"><img id="image" src="' . $logo . '" alt="logo" /></div>
 			</div>
-			<div id="header">' . $_L['All_Transactions_at_Date'] . ': ' . date($config['date_format'], strtotime($mdate)) . '</div>
+			<div id="header">' . Lang::T('All Transactions at Date') . ': ' . Lang::dateAndTimeFormat($sd, $ts) .' - '. Lang::dateAndTimeFormat($ed, $te) . '</div>
 			<table id="customers">
 				<tr>
-				<th>' . $_L['Username'] . '</th>
-				<th>' . $_L['Plan_Name'] . '</th>
-				<th>' . $_L['Type'] . '</th>
-				<th>' . $_L['Plan_Price'] . '</th>
-				<th>' . $_L['Created_On'] . '</th>
-				<th>' . $_L['Expires_On'] . '</th>
-				<th>' . $_L['Method'] . '</th>
-				<th>' . $_L['Routers'] . '</th>
+				<th>' . Lang::T('Username') . '</th>
+				<th>' . Lang::T('Plan Name') . '</th>
+				<th>' . Lang::T('Type') . '</th>
+				<th>' . Lang::T('Plan Price') . '</th>
+				<th>' . Lang::T('Created On') . '</th>
+				<th>' . Lang::T('Expires On') . '</th>
+				<th>' . Lang::T('Method') . '</th>
+				<th>' . Lang::T('Routers') . '</th>
 				</tr>';
             $c = true;
             foreach ($x as $value) {
@@ -98,8 +173,8 @@ switch ($action) {
                 $plan_name = $value['plan_name'];
                 $type = $value['type'];
                 $price = $config['currency_code'] . ' ' . number_format($value['price'], 0, $config['dec_point'], $config['thousands_sep']);
-                $recharged_on = date($config['date_format'], strtotime($value['recharged_on']));
-                $expiration = date($config['date_format'], strtotime($value['expiration']));
+                $recharged_on = Lang::dateAndTimeFormat($value['recharged_on'], $value['recharged_time']);
+                $expiration = Lang::dateAndTimeFormat($value['expiration'], $value['time']);
                 $time = $value['time'];
                 $method = $value['method'];
                 $routers = $value['routers'];
@@ -110,13 +185,13 @@ switch ($action) {
 				<td>$type</td>
 				<td align='right'>$price</td>
 				<td>$recharged_on</td>
-				<td>$expiration $time </td>
+				<td>$expiration</td>
 				<td>$method</td>
 				<td>$routers</td>
 				</tr>";
             }
             $html .= '</table>
-			<h4 class="text-uppercase text-bold">' . $_L['Total_Income'] . ':</h4>
+			<h4 class="text-uppercase text-bold">' . Lang::T('Total Income') . ':</h4>
 			<h3 class="sum">' . $config['currency_code'] . ' ' . number_format($xy, 2, $config['dec_point'], $config['thousands_sep']) . '</h3>';
             run_hook('print_pdf_by_date'); #HOOK
 
@@ -170,7 +245,7 @@ $style
 $html
 EOF;
             $mpdf->WriteHTML($nhtml);
-            $mpdf->Output(date('Y-m-d') . Package::_raid(4) . '.pdf', 'D');
+            $mpdf->Output('phpnuxbill_reports_'.date('Ymd_His') . '.pdf', 'D');
         } else {
             echo 'No Data';
         }
@@ -235,10 +310,12 @@ EOF;
 
         $title = ' Reports [' . $mdate . ']';
         $title = str_replace('-', ' ', $title);
-        if(file_exists('system/uploads/logo.png')){
-            $logo = 'system/uploads/logo.png';
-        }else{
-            $logo = 'system/uploads/logo.default.png';
+
+        $UPLOAD_URL_PATH = str_replace($root_path, '',  $UPLOAD_PATH);
+        if (file_exists($UPLOAD_PATH . '/logo.png')) {
+            $logo = $UPLOAD_URL_PATH . '/logo.png';
+        } else {
+            $logo = $UPLOAD_URL_PATH . '/logo.default.png';
         }
 
         if ($x) {
@@ -247,21 +324,21 @@ EOF;
 				<div id="address">
 					<h3>' . $config['CompanyName'] . '</h3>
 					' . $config['address'] . '<br>
-					' . $_L['Phone_Number'] . ': ' . $config['phone'] . '<br>
+					' . Lang::T('Phone Number') . ': ' . $config['phone'] . '<br>
 				</div>
-				<div id="logo"><img id="image" src="'.$logo.'" alt="logo" /></div>
+				<div id="logo"><img id="image" src="' . $logo . '" alt="logo" /></div>
 			</div>
-			<div id="header">' . $_L['All_Transactions_at_Date'] . ': ' . date($config['date_format'], strtotime($fdate)) . ' - ' . date($config['date_format'], strtotime($tdate)) . '</div>
+			<div id="header">' . Lang::T('All Transactions at Date') . ': ' . date($config['date_format'], strtotime($fdate)) . ' - ' . date($config['date_format'], strtotime($tdate)) . '</div>
 			<table id="customers">
 				<tr>
-				<th>' . $_L['Username'] . '</th>
-				<th>' . $_L['Plan_Name'] . '</th>
-				<th>' . $_L['Type'] . '</th>
-				<th>' . $_L['Plan_Price'] . '</th>
-				<th>' . $_L['Created_On'] . '</th>
-				<th>' . $_L['Expires_On'] . '</th>
-				<th>' . $_L['Method'] . '</th>
-				<th>' . $_L['Routers'] . '</th>
+				<th>' . Lang::T('Username') . '</th>
+				<th>' . Lang::T('Plan Name') . '</th>
+				<th>' . Lang::T('Type') . '</th>
+				<th>' . Lang::T('Plan Price') . '</th>
+				<th>' . Lang::T('Created On') . '</th>
+				<th>' . Lang::T('Expires On') . '</th>
+				<th>' . Lang::T('Method') . '</th>
+				<th>' . Lang::T('Routers') . '</th>
 				</tr>';
             $c = true;
             foreach ($x as $value) {
@@ -288,7 +365,7 @@ EOF;
 				</tr>";
             }
             $html .= '</table>
-			<h4 class="text-uppercase text-bold">' . $_L['Total_Income'] . ':</h4>
+			<h4 class="text-uppercase text-bold">' . Lang::T('Total Income') . ':</h4>
 			<h3 class="sum">' . $config['currency_code'] . ' ' . number_format($xy, 2, $config['dec_point'], $config['thousands_sep']) . '</h3>';
 
             run_hook('pdf_by_period'); #HOOK
@@ -342,7 +419,7 @@ $style
 $html
 EOF;
             $mpdf->WriteHTML($nhtml);
-            $mpdf->Output(date('Y-m-d') . Package::_raid(4) . '.pdf', 'D');
+            $mpdf->Output(date('Ymd_His') . '.pdf', 'D');
         } else {
             echo 'No Data';
         }

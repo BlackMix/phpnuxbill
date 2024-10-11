@@ -9,7 +9,8 @@ CREATE TABLE `nas` (
   `secret` varchar(60) COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'secret',
   `server` varchar(64) COLLATE utf8mb4_general_ci DEFAULT NULL,
   `community` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `description` varchar(200) COLLATE utf8mb4_general_ci DEFAULT 'RADIUS Client'
+  `description` varchar(200) COLLATE utf8mb4_general_ci DEFAULT 'RADIUS Client',
+  `routers` varchar(32) COLLATE utf8mb4_general_ci NOT NULL DEFAULT ''
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 DROP TABLE IF EXISTS `radacct`;
@@ -100,6 +101,13 @@ CREATE TABLE `radusergroup` (
   `priority` int(11) NOT NULL DEFAULT '1'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+
+DROP TABLE IF EXISTS `nasreload`;
+CREATE TABLE `nasreload` (
+  nasipaddress varchar(15) NOT NULL,
+  reloadtime datetime NOT NULL,
+  PRIMARY KEY (nasipaddress)
+) ENGINE = INNODB;
 
 ALTER TABLE `nas`
   ADD PRIMARY KEY (`id`),
